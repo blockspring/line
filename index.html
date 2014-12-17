@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<link rel="stylesheet" href="//www.blockspring.com/graph_templates/api_v1/boilerplate.css">
+<style>
+html, body {
+  font-size: 12px;
+  font-family: sans-serif;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+strong {
+  font-weight: bold;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #ddd;
+}
+
+.axis .tick text {
+  fill: #666;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.active .line {
+  stroke-width: 2.5px;
+}
+
+.series {
+  -webkit-transition: opacity 0.12s ease-out;
+          transition: opacity 0.12s ease-out;
+}
+
+.label {
+  font-size: 1em;
+  font-weight: bold;
+}
+
+#legend {
+  position: absolute;
+  z-index: 8;
+  right: 0;
+  top: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+#tooltip {
+  opacity: 0;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  border-radius: 3px;
+  border: 1px solid #d0d0d0;
+  padding: 12px;
+  background: #f9f9f9;
+  background: rgba(255,255,255,0.9);
+  pointer-events: none;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#tooltip h3 {
+  margin: 0 0 0 0;
+  padding: 0 0 12px;
+  font-weight: bold;
+}
+
+.dot,
+.plumb {
+  pointer-events: none;
+}
+#dropdowns {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  z-index: 5;
+}
+</style>
+
+<body>
+
+  <div id="dropdowns"></div>
+  <div id="tooltip"></div>
+  <div id="legend"></div>
+
+<script src="//www.blockspring.com/graph_templates/api_v1/boilerplate.js"></script>
+<script>
+var graph = {
+  draw: function(margin) {
+    d3.selectAll("svg").remove();
+
+    d3.select("body")
+      .style("font-family", Block.vars["font-family"])
+      .style("font-size", Block.vars["font-size"]);
+
+    var dimension1 = Block.vars.csv.columnRoleMap.xdimension[0];
+    var dimension2 = Block.vars.csv.columnRoleMap.ydimension[0];
+    var grouping = Block.vars.csv.columnRoleMap.grouping[0];
+    var rotatedX = Block.vars.x_axis_rotate;
+
+    var margin = margin || {top: 24, right: 100, bottom: 44, left: 60};
+    if (Block.vars.csv.columnRoleMap.grafly_dropdowns.length != 0) {
+      margin.top = 74;
+    }
+    if (Block.vars.hide_legend) {
+      margin.right = 24;
+    }
+    if (Block.vars.x_axis_hide) {
+      margin.bottom = 24;
+    }
+    if (Block.vars.y_axis_hide) {
+      margin.left = 24;
+    }
+    if (Block.vars.margin_top) margin.top = Block.vars.margin_top;
+    if (Block.vars.margin_right) margin.right = Block.vars.margin_right;
+    if (Block.vars.margin_bottom) margin.bottom = Block.vars.margin_bottom;
+    if (Block.vars.margin_left) margin.left = Block.vars.margin_left;
+
+    var width = document.body.clientWidth - margin.left - margin.right,
+        height = window.innerHeight - margin.top - margin.bottom - 4;
+
+    if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'date') {
+      var x = d3.time.scale()
+        .range([0, width]);
+    } else if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'string') {
+      var x = d3.scale.ordinal()
+    } else {
+      var x = d3.scale.linear()
+        .range([0, width]);
+    }
+
+    var y = d3.scale.linear()
+    .range([height, 0]);
+
+    var color = d3.scale.ordinal().range(Block.vars.colors);
+
+    var line = d3.svg.line()
+        .interpolate(Block.vars.interpolation)
+        .defined(function(d) { return !isNaN(d.value); })
+        .x(function(d) { return x(d.date); })
+        .y(function(d) { return y(d.value); });
+
+    var customTimeFormat = d3.time.format.multi([
+      [".%L", function(d) { return d.getMilliseconds(); }],
+      [":%S", function(d) { return d.getSeconds(); }],
+      ["%I:%M", function(d) { return d.getMinutes(); }],
+      ["%I %p", function(d) { return d.getHours(); }],
+      ["%m/%d", function(d) { return d.getDay() && d.getDate() != 1; }],
+      ["%m/%d", function(d) { return d.getDate() != 1; }],
+      ["%b %Y", function(d) { return d.getMonth(); }],
+      ["%b %Y", function() { return true; }],
+      ["%Y", function() { return true; }]
+    ]);
+
+    var dated = Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'date';
+
+    var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom")
+    .ticks(Block.vars.x_ticks ? Block.vars.x_ticks : Math.max(2,Math.round(width/70)))
+    .tickSize(-height)
+    .tickFormat(String);
+
+    if (Block.vars.custom_x_format) {
+      if (dated) {
+        xAxis.tickFormat(function(d) {
+          return d3.time.format(Block.vars.x_axis_format_date)(new Date(d*1))
+        });
+      } else if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'string') {
+
+      } else {
+        xAxis.tickFormat(d3.format(Block.vars.x_axis_format_number));
+      }
+    } else {
+      if (dated) {
+        xAxis.tickFormat(customTimeFormat);
+      } else if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'string') {
+
+      } else {
+        xAxis.tickFormat(d3.format(Block.vars.x_axis_format_number));
+      }
+    }
+
+    var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left")
+    .ticks(Block.vars.y_ticks ? Block.vars.y_ticks : Math.max(2,Math.round(height/70)))
+    .tickSize(-width)
+    .tickFormat(d3.format(Block.vars.y_axis_format_number));
+
+    yAxis.tickFormat(d3.format(Block.vars.y_axis_format_number));
+
+    var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    var raw  = Block.vars.csv.data;
+
+    if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type != 'string') {
+      raw = raw.sort(function(a,b){return a[dimension1]-b[dimension1]})
+    }
+
+      data = raw.map(function(row){
+        if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'string') {
+        } else {
+          row[dimension1] = dated ? new Date(row[dimension1]) : +row[dimension1];
+        }
+        row[dimension2] = +row[dimension2];
+        if (grouping) row[grouping] = row[grouping];
+        return row;
+      });
+
+      color.domain(grouping ? data.map(function(d) { return d[grouping] }) : ["Series"]);
+
+      var series = color.domain().map(function(group) {
+        return {
+          name: group,
+          values: data
+            .filter(function(d) {
+              if (!grouping) return true;
+              return d[grouping] == group;
+            })
+            .map(function(d) {
+              return {date: d[dimension1], value: d[dimension2]};
+            })
+        };
+      });
+
+      if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'string') {
+        var existing_items = {};
+        data.forEach(function(d) {
+          var item = d[dimension1];
+          if (!(item in existing_items)) {
+            existing_items[item] = null;
+          }
+        });
+        var xitems = Object.keys(existing_items);
+        x.domain(xitems)
+          .range(d3.range(0,width,width/(xitems.length-1)-0.01));
+      } else {
+        x.domain(d3.extent(data, function(d) { return d[dimension1]; }));
+      }
+
+      var yExtents = d3.extent(data, function(d) { return d[dimension2]; });
+      y.domain([
+        Block.vars.y_axis_min != null ? Block.vars.y_axis_min  : yExtents[0],
+        Block.vars.y_axis_max != null ? Block.vars.y_axis_max  : yExtents[1]
+      ]).nice();
+
+      var timediff = x.domain()[1] - x.domain()[0];
+
+      console.log("min time", x.domain()[0]);
+      console.log("max time", x.domain()[1]);
+      console.log("time diff (days)", timediff/1000/3600/24);
+
+      var xvalues = d3.set(data.map(function(d) { return d[dimension1]; })).values()
+        .map(function(d) {
+          return [
+            dated ? new Date(d) : d,
+            dated ? x(new Date(d)) : x(d)
+          ]
+        });
+
+      var xlookup = {};
+      xvalues.forEach(function(d) {
+        xlookup[d[1]] = data.filter(function(p) {
+          return dated
+            ? p[dimension1].getTime() == d[0].getTime()
+            : p[dimension1] == d[0];
+        });
+      });
+
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis)
+        .append("text")
+          .attr("class", "label")
+          .attr("x", width/2)
+          .attr("y", Block.vars.x_axis_hide ? 18 : 38)
+          .style("text-anchor", "middle")
+          .text(dimension1);
+
+      d3.selectAll(".x .tick text")
+        .attr("x", "0")
+        .attr("y", rotatedX ? 4 : 10)
+        .attr("transform", rotatedX ? "rotate(20)" : null)
+        .style("text-anchor", rotatedX ? "start" : "middle")
+        .style("display", Block.vars.x_axis_hide ? "none" : null)
+
+      if (Block.vars.csv.columnMetaData[Block.vars.csv.columnRoleMap.xdimension[0]].type == 'string') {
+        d3.selectAll(".x .tick text")
+          .filter(function(d,i) {
+            var n = x.domain().length;
+            var goal = Block.vars.x_ticks ? Block.vars.x_ticks : Math.max(2,Math.round(width/70));
+            return i % Math.ceil(n/goal) != 0;
+          })
+          .remove()
+      }
+
+      if (!Block.vars.margin_bottom) {
+        var xAxisHeight = d3.select(".x.axis").node().getBBox().height + d3.select(".x.axis").node().getBBox().y;
+        if (!Block.vars.x_axis_hide && (xAxisHeight > margin.bottom)) {
+          margin.bottom = xAxisHeight + 2;
+          graph.draw(margin);
+          return;
+        }
+      }
+
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+        .append("text")
+          .attr("class", "label")
+          .attr("y", -18)
+          .attr("x", -margin.left+12)
+          .attr("dy", ".71em")
+          .style("text-anchor", "start")
+          .text(dimension2);
+
+      d3.selectAll(".y .tick text")
+        .attr("x", "-10")
+        .style("display", Block.vars.y_axis_hide ? "none" : null);
+
+      if (!Block.vars.margin_left) {
+        if (!Block.vars.y_axis_hide && d3.select(".y.axis").node().getBBox().x < -margin.left) {
+          margin.left = -d3.select(".y.axis").node().getBBox().x + 6;
+          graph.draw(margin);
+          return;
+        }
+      }
+
+      if (Block.vars.hide_grid) {
+        svg.selectAll(".axis path").style("display", "none");
+        svg.selectAll(".axis line").style("display", "none");
+      }
+
+      svg.append("rect")
+         .attr("x", -margin.left)
+         .attr("y", -margin.top)
+         .attr("width", width + margin.left + margin.right)
+         .attr("height", height + margin.top + margin.bottom)
+         .style("fill", "transparent")
+         .on("touchstart", deactivate)
+
+      var lines = svg.selectAll(".series")
+        .data(series)
+      .enter().append("g")
+        .attr("class", "series");
+
+      lines.append("path")
+        .attr("class", "line")
+        .attr("d", function(d) { return line(d.values); })
+        .style("stroke", function(d) { return color(d.name); });
+
+      var plumb = svg.append("line")
+        .attr("class", "plumb")
+        .attr("x1", -500)
+        .attr("x2", -500)
+        .attr("y1", 0)
+        .attr("y2", height)
+        .style("stroke", "#bbb");
+
+      var interaction = svg.append("rect")
+        .style("fill", "transparent")
+        .attr("width", width)
+        .attr("height", height)
+        interaction.on("mousemove", activate)
+        interaction.on("touchstart", activate)
+        interaction.on("mouseout", deactivate);
+
+      function activate() {
+        var pos = d3.mouse(this);
+        var closest = {};
+        var minDist = Infinity;
+
+        xvalues.forEach(function(tick) {
+          var dist = Math.abs(tick[1] - pos[0]);
+          if (dist < minDist) {
+            closest = tick;
+            minDist = dist;
+          }
+        });
+
+        plumb
+          .attr("x1", closest[1])
+          .attr("x2", closest[1])
+
+        var text = "<h3>" + xAxis.tickFormat()(closest[0]) + "</h3>";
+
+        // Render single point
+        var values = xlookup[closest[1]];
+        var minDistValue = Infinity;
+        var closestValue = {};
+        values.forEach(function(d) {
+          var dist = Math.abs(pos[1] - y(d[dimension2]));
+          if (dist < minDistValue) {
+            closestValue = d;
+            minDistValue = dist;
+          }
+        });
+
+        [closestValue].forEach(function(d) {
+          text += "<strong style='color:" + color(d[grouping]) + ";'>" + (grouping ? d[grouping] : "") + "</strong><br/>";
+
+          if (Block.vars.csv.columnRoleMap.tooltips &&
+              Block.vars.csv.columnRoleMap.tooltips.length > 0) {
+            Block.vars.csv.columnRoleMap.tooltips.forEach(function(k) {
+              if (k == grouping) return;
+              text += "<strong>" + k + "</strong>" + " <br/><span>" + d[k] + "</span><br/><br/>";
+            });
+          } else {
+            for (var k in d) {
+              if (k == "graflyID") continue;
+              if (k == "count") continue;
+              if (k == grouping) continue;
+              text += "<strong>" + k + "</strong>" + " <br/><span>" + d[k] + "</span><br/><br/>";
+            }
+          }
+        });
+
+        lines.style("opacity", 0.2)
+          .classed("active", false)
+          .filter(function(d) { return d.name == closestValue[grouping]; })
+          .style("opacity", 1)
+          .classed("active", true)
+
+        d3.selectAll(".legend").style("opacity", 0.2)
+          .filter(function(p) {
+            return p == closestValue[grouping];
+          })
+          .style("opacity", 1);
+
+        // Render every point
+        /*
+        var values = xlookup[closest[1]];
+        values.forEach(function(d) {
+          text += "<span style='color:" + color(d[grouping]) + ";'>" + (grouping ? d[grouping] : "") + "</span><br/>";
+
+          if (Block.vars.csv.columnRoleMap.tooltips &&
+              Block.vars.csv.columnRoleMap.tooltips.length > 0) {
+            Block.vars.csv.columnRoleMap.tooltips.forEach(function(k) {
+              if (k == grouping) return;
+              text += k + ": <span>" + d[k] + "</span><br/>";
+            });
+          } else {
+            for (var k in d) {
+              if (k == "graflyID") continue;
+              if (k == "count") continue;
+              if (k == grouping) continue;
+              text += k + ": <span>" + d[k] + "</span><br/>";
+            }
+          }
+        });
+        */
+
+        d3.selectAll(".dot").remove();
+        [closestValue].forEach(function(d) {
+          svg.append("circle")
+            .attr("class", "dot")
+            .attr("cx", x(d[dimension1]))
+            .attr("cy", y(d[dimension2]))
+            .attr("r", 3.5)
+            .attr("fill", color(grouping ? d[grouping] : "Series"))
+          svg.append("circle")
+            .attr("class", "dot")
+            .attr("cx", x(d[dimension1]))
+            .attr("cy", y(d[dimension2]))
+            .attr("r", 1.5)
+            .attr("fill", "#fff")
+        });
+
+        d3.select("#tooltip")
+          .html(text);
+
+        var ttWidth = parseInt(d3.select("#tooltip").style("width").replace("px", ""));
+        var ttHeight = parseInt(d3.select("#tooltip").style("height").replace("px", ""));
+
+        var max_tooltip_width =  $(window).width() < 700 ? width : width / 2;
+
+        d3.select("#tooltip")
+          .style("max-width", max_tooltip_width + "px")
+          .style("top", y(closestValue[dimension2])+ "px")
+          .style("left", closest[1] + "px")
+          .style("margin-top", (y(closestValue[dimension2]) + ttHeight) > height
+            ? (-ttHeight+40) + "px"
+            : "0px")
+          .style("margin-left", (
+            closest[1] > width*0.5
+              ? -ttWidth+24
+              : margin.left+10
+          )+ "px")
+          .style("opacity", 1);
+      }
+
+      function deactivate() {
+        d3.select("#tooltip")
+          .style("opacity", 0);
+        d3.selectAll(".dot").remove();
+        lines.style("opacity", 1)
+        d3.selectAll(".legend").style("opacity", 1)
+      }
+
+      if (!Block.vars.hide_legend) {
+        var legendItems = color.domain();
+
+        if (Block.vars.sort_legend_alpha) legendItems.sort();
+
+        var legend = d3.select("#legend")
+          .style("margin-top", margin.top + "px")
+          .style("height", height + "px")
+          .style("width", margin.right + "px")
+          .append("svg")
+            .attr("height", (legendItems.length+1)*16)
+            .attr("width", margin.right)
+          .selectAll(".legend")
+            .data(legendItems)
+          .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i) { return "translate(0," + i * 16 + ")"; });
+
+        legend.append("rect")
+            .attr("y", 6)
+            .attr("x", 10)
+            .attr("width", 9)
+            .attr("height", 3)
+            .style("fill", color);
+
+        legend.append("text")
+            .attr("x", 24)
+            .attr("y", 7)
+            .attr("dy", ".35em")
+            .style("text-anchor", "start")
+              .text(function(d) { return d; });
+
+        legend.append("rect")
+            .style("fill", "transparent")
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", margin.right)
+            .attr("height", 16)
+            .on("mouseover", activateLegend)
+            .on("touchstart", activateLegend)
+            .on("mouseout", function() {
+              lines.style("opacity", 1)
+                .classed("active", false);
+              d3.selectAll(".legend").style("opacity", 1)
+            });
+
+        function activateLegend(d) {
+          lines.style("opacity", 0.07)
+            .classed("active", false)
+            .filter(function(p) {
+              return d == p.name;
+            })
+            .classed("active", true)
+            .style("opacity", 1);
+          d3.selectAll(".legend").style("opacity", 0.2)
+            .filter(function(p) {
+              return p == d;
+            })
+            .style("opacity", 1);
+        }
+    }
+  }
+};
+
+Block.ready(graph.draw);
+
+</script>

@@ -1,0 +1,242 @@
+{
+  "appearance": {
+    "x_axis_hide": {
+      "readable": "Hide X Axis Tick Labels",
+      "category": "X-Axis",
+      "placeholder": null,
+      "values": false,
+      "description": "",
+      "type": "boolean"
+    },
+    "x_axis_rotate": {
+      "readable": "Rotate X Axis Labels",
+      "category": "X-Axis",
+      "placeholder": null,
+      "values": false,
+      "description": "",
+      "type": "boolean"
+    },
+    "x_ticks": {
+      "readable": "Desired Number of Ticks",
+      "category": "X-Axis",
+      "placeholder": null,
+      "values": null,
+      "description": "Hints a number of ticks to display on the X-axis.",
+      "type": "number"
+    },
+    "custom_x_format": {
+      "readable": "Custom X-Axis Format",
+      "category": "X-Axis",
+      "placeholder": null,
+      "values": false,
+      "description": "Use a custom X-Axis, specified below",
+      "type": "boolean"
+    },
+    "x_axis_format_number": {
+      "readable": "Format string",
+      "category": "X-Axis",
+      "placeholder": null,
+      "values": ",.2s",
+      "description": "Set X-axis tick format. <br/><a href='https://github.com/mbostock/d3/wiki/Formatting' target='_blank'>See formats here.</a>",
+      "type": "text_format"
+    },
+    "x_axis_format_date": {
+      "readable": "Format date",
+      "category": "X-Axis",
+      "placeholder": null,
+      "values": "%m/%d/%y",
+      "description": "Set X-axis tick format, if it is a date. <br/><a href='https://github.com/mbostock/d3/wiki/Formatting' target='_blank'>See formats here.</a>",
+      "type": "date_format"
+    },
+    "y_axis_hide": {
+      "readable": "Hide Y Axis Tick Labels",
+      "category": "Y-Axis",
+      "placeholder": null,
+      "values": false,
+      "description": "",
+      "type": "boolean"
+    },
+    "y_ticks": {
+      "readable": "Desired Number of Ticks",
+      "category": "Y-Axis",
+      "placeholder": null,
+      "values": null,
+      "description": "Hints a number of ticks to display on the Y-axis.",
+      "type": "number"
+    },
+    "y_axis_min": {
+      "readable": "Minimum axis value",
+      "category": "Y-Axis",
+      "placeholder": null,
+      "values": null,
+      "description": "Overrides y-axis minimum value.",
+      "type": "number"
+    },
+    "y_axis_max": {
+      "readable": "Maximum axis value",
+      "category": "Y-Axis",
+      "placeholder": null,
+      "values": null,
+      "description": "Overrides y-axis maximum value.",
+      "type": "number"
+    },
+    "y_axis_format_number": {
+      "readable": "Format string",
+      "category": "Y-Axis",
+      "placeholder": null,
+      "values": ",.2s",
+      "description": "Set Y-axis tick format. <br/><a href='https://github.com/mbostock/d3/wiki/Formatting' target='_blank'>See formats here.</a>",
+      "type": "text_format"
+    },
+    "sort_legend_alpha": {
+      "readable": "Sort alphabetically",
+      "category": "Legend",
+      "placeholder": null,
+      "values": false,
+      "description": "",
+      "type": "boolean"
+    },
+    "hide_legend": {
+      "readable": "Hide legend",
+      "category": "Legend",
+      "placeholder": null,
+      "values": false,
+      "description": "",
+      "type": "boolean"
+    },
+    "colors": {
+      "readable": "Colors",
+      "category": "Appearance",
+      "placeholder": null,
+      "values": ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"],
+      "description": "Sets the colors used in the graph. Each color will be used for 1 series. If you specify less colors than series, colors will be repeated.",
+      "type": "multiple_colors_arbitrary"
+    },
+    "interpolation": {
+      "readable": "Interpolate line values",
+      "category": "Appearance",
+      "placeholder": "linear",
+      "values": "linear",
+      "description": "Choose between 'cardinal', 'basis', 'linear', or 'step'.",
+      "type": "text"
+    },
+    "hide_grid": {
+      "readable": "Hide Gridlines",
+      "category": "Appearance",
+      "placeholder": null,
+      "values": false,
+      "description": "",
+      "type": "boolean"
+    },
+    "font-family": {
+      "readable": "Font family",
+      "category": "Appearance",
+      "placeholder": null,
+      "values": "sans-serif",
+      "description": "",
+      "type": "string"
+    },
+    "font-size": {
+      "readable": "Font size",
+      "category": "Appearance",
+      "placeholder": null,
+      "values": "12px",
+      "description": "",
+      "type": "string"
+    },
+    "margin_top": {
+      "readable": "Margin top",
+      "category": "Margins",
+      "placeholder": null,
+      "values": 0,
+      "description": "Sets the graph's top margin in pixels.",
+      "type": "number"
+    },
+    "margin_right": {
+      "readable": "Margin right",
+      "category": "Margins",
+      "placeholder": null,
+      "values": 0,
+      "description": "Sets the graph's right margin in pixels.",
+      "type": "number"
+    },
+    "margin_bottom": {
+      "readable": "Margin bottom",
+      "category": "Margins",
+      "placeholder": null,
+      "values": 0,
+      "description": "Sets the graph's bottom margin in pixels.",
+      "type": "number"
+    },
+    "margin_left": {
+      "readable": "Margin left",
+      "category": "Margins",
+      "placeholder": null,
+      "values": 0,
+      "description": "Sets the graph's left margin in pixels.",
+      "type": "number"
+    }
+  },
+  "roles": {
+    "xdimension": {
+      "allows_multiple": false,
+      "required": true,
+      "types": [
+        "number"
+      ],
+      "sample_columns": [
+        "day"
+      ],
+      "default_aggregation": "pivot_by",
+      "description": "Populates the X-Axis"
+    },
+    "ydimension": {
+      "allows_multiple": false,
+      "required": true,
+      "types": [
+        "number"
+      ],
+      "sample_columns": [
+        "revenue"
+      ],
+      "default_aggregation": "sum",
+      "description": "Populates the Y-Axis"
+    },
+    "grouping": {
+      "allows_multiple": false,
+      "required": false,
+      "types": [
+        "string",
+        "number",
+        "date"
+      ],
+      "sample_columns": [
+        "Car"
+      ],
+      "default_aggregation": "pivot_by",
+      "description": "Color group"
+    },
+    "tooltips": {
+      "allows_multiple": true,
+      "required": false,
+      "types": [
+        "string"
+      ],
+      "sample_columns": [
+      ],
+      "description": "Fields displayed in tooltips"
+    },
+    "grafly_dropdowns": {
+       "allows_multiple": true,
+       "required": false,
+       "types": [
+         "string",
+         "date",
+         "number"
+       ],
+       "sample_columns": [
+       ],
+       "description": "dropdowns."
+    }
+  }
+}
